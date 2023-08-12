@@ -13,7 +13,7 @@ TARGET_FILE_EXTENSION = .exe
 else
 ifeq ($(TARGET),wasm)
 CC = emcc
-CFLAGS += -O3 -std=c99 -Wall -Wextra
+CFLAGS += -O3 -std=c99 -Wall -Wextra -sUSE_SDL=2
 LDFLAGS += -s TOTAL_MEMORY=70057984 -sALLOW_MEMORY_GROWTH=1 -sUSE_SDL=2 --preload-file fox32os.img
 TARGET_EXTRADEPS = fox32os.img
 TARGET_FILE_EXTENSION = .html

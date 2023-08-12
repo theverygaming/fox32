@@ -24,6 +24,16 @@
 
 #include "../fox32rom.h"
 
+#ifdef __EMSCRIPTEN__
+#define CYCLE_AUTOADJUST
+#endif
+
+#define CYCLE_AUTOADJUST_TOLERANCE 10
+#define CYCLE_AUTOADJUST_ADD 1000
+#ifdef CYCLE_AUTOADJUST
+#include <math.h>
+#endif
+
 #define FPS 60
 #define TPF 1
 #define TPS (FPS * TPF)
@@ -37,6 +47,9 @@ uint32_t tick_start;
 uint32_t tick_end;
 int ticks = 0;
 bool done = false;
+#ifdef CYCLE_AUTOADJUST
+int last_cycle_count = 1;
+#endif
 
 time_t rtc_time;
 uint32_t rtc_uptime;
@@ -127,7 +140,7 @@ int main(int argc, char *argv[]) {
     tick_end = SDL_GetTicks();
 
 #ifdef __EMSCRIPTEN__
-    emscripten_set_main_loop(main_loop, FPS, 1);
+    emscripten_set_main_loop(main_loop, 0, 1);
 #endif
 
     while (!done && !bus_requests_exit) {
@@ -158,6 +171,28 @@ void main_loop(void) {
 
     int cycles_per_tick = FOX32_CPU_HZ / TPS / dt;
     int extra_cycles = FOX32_CPU_HZ / TPS - (cycles_per_tick * dt);
+
+#ifdef CYCLE_AUTOADJUST
+    int last_tps = 1000 / (dt / TPF);
+    if(last_tps > (TPS - CYCLE_AUTOADJUST_TOLERANCE) && last_tps < (TPS + CYCLE_AUTOADJUST_TOLERANCE)) {
+        cycles_per_tick = last_cycle_count;
+        extra_cycles = 0;
+    } else if(last_tps < TPS) {
+        float mspc = (float)dt / last_cycle_count;
+        if(isnormal(mspc)) {
+            int cycles = (((float)1000 / TPS) / mspc);
+            if(cycles != 0) {
+                cycles_per_tick = cycles;
+                extra_cycles = 0;
+            } else {
+                cycles_per_tick = last_cycle_count;
+                extra_cycles = 0;
+            }
+        }
+    }
+    extra_cycles += CYCLE_AUTOADJUST_ADD;
+    last_cycle_count = cycles_per_tick + extra_cycles;
+#endif
 
     fox32_err_t error = FOX32_ERR_OK;
 
