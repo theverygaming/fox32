@@ -197,7 +197,11 @@ void main_loop(void) {
     fox32_err_t error = FOX32_ERR_OK;
 
     for (int i = 0; i < dt; i++) {
+#ifdef CYCLE_AUTOADJUST
+        rtc_uptime = SDL_GetTicks();
+#else
         rtc_uptime += 1;
+#endif
         rtc_time = time(NULL);
 
         int cycles_left = cycles_per_tick;
