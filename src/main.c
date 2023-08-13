@@ -179,16 +179,8 @@ void main_loop(void) {
         extra_cycles = 0;
     } else if(last_tps < TPS) {
         float mspc = (float)dt / last_cycle_count;
-        if(isnormal(mspc)) {
-            int cycles = (((float)1000 / TPS) / mspc);
-            if(cycles != 0) {
-                cycles_per_tick = cycles;
-                extra_cycles = 0;
-            } else {
-                cycles_per_tick = last_cycle_count;
-                extra_cycles = 0;
-            }
-        }
+        cycles_per_tick = isnormal(mspc) ? (1000.0f / TPS) / mspc : cycles_per_tick;
+        extra_cycles = 0;
     }
     extra_cycles += CYCLE_AUTOADJUST_ADD;
     last_cycle_count = cycles_per_tick + extra_cycles;
